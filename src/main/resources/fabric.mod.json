@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "ping-nametag",
+  "id": "nametag-ping",
   "version": "${version}",
-  "name": "NametagPing",
+  "name": "Nametag Ping",
   "description": "Displays player ping directly in nametags.",
   "authors": [
     "ic3dwtf"
