@@ -2,47 +2,47 @@ package com.ic3dwtf.pingnametag.mixin;
 
 import com.ic3dwtf.pingnametag.config.PingNametagConfig;
 import com.ic3dwtf.pingnametag.config.PingNametagConfigManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.render.entity.DisplayEntityRenderer;
-import net.minecraft.client.render.entity.state.TextDisplayEntityRenderState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.DisplayEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.PlainTextContent;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import java.util.regex.*;
+import java.util.regex.Matcher;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.renderer.entity.DisplayRenderer;
+import net.minecraft.client.renderer.entity.state.TextDisplayEntityRenderState;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.contents.PlainTextContents;
+import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 
-@Mixin(DisplayEntityRenderer.TextDisplayEntityRenderer.class)
+@Mixin(DisplayRenderer.TextDisplayRenderer.class)
 public abstract class TextDisplayEntityRendererMixin {
 
     @Shadow
-    protected abstract DisplayEntity.TextDisplayEntity.TextLines getLines(Text text, int width);
+    protected abstract Display.TextDisplay.CachedInfo splitLines(Component text, int width);
 
     @Inject(
-            method = "updateRenderState(Lnet/minecraft/entity/decoration/DisplayEntity$TextDisplayEntity;Lnet/minecraft/client/render/entity/state/TextDisplayEntityRenderState;F)V",
+            method = "extractRenderState(Lnet/minecraft/world/entity/Display$TextDisplay;Lnet/minecraft/client/renderer/entity/state/TextDisplayEntityRenderState;F)V",
             at = @At("TAIL")
     )
-    private void ping_nametag$appendPingToPlayerMountedTextDisplay(DisplayEntity.TextDisplayEntity entity, TextDisplayEntityRenderState renderState, float tickProgress, CallbackInfo ci) {
+    private void ping_nametag$appendPingToPlayerMountedTextDisplay(Display.TextDisplay entity, TextDisplayEntityRenderState renderState, float tickProgress, CallbackInfo ci) {
         PingNametagConfig config = PingNametagConfigManager.get();
 
         if (!config.enabled) {
             return;
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.getConnection() == null) {
             return;
         }
 
-        Text baseText = entity.getText();
+        Component baseText = entity.getText();
         String baseTextValue = baseText == null ? "" : baseText.getString();
         if (baseTextValue.isEmpty()) {
             return;
@@ -51,92 +51,108 @@ public abstract class TextDisplayEntityRendererMixin {
         int firstNewline = baseTextValue.indexOf('\n');
         String firstLine = firstNewline >= 0 ? baseTextValue.substring(0, firstNewline) : baseTextValue;
 
-        PlayerListEntry entry = null;
+        PlayerInfo entry = null;
         Entity vehicle = entity.getVehicle();
-        if (vehicle instanceof PlayerEntity vehiclePlayer) {
-            if (firstNewline < 0 && !firstLine.contains(vehiclePlayer.getNameForScoreboard())) {
+
+        if (vehicle instanceof Player vehiclePlayer) {
+            if (firstNewline < 0 && !firstLine.contains(vehiclePlayer.getScoreboardName())) {
                 return;
             }
-            if (!config.showOwnPing && vehiclePlayer.getUuid().equals(client.player.getUuid())) {
+
+            if (!config.showOwnPing && vehiclePlayer.getUUID().equals(client.player.getUUID())) {
                 return;
             }
-            entry = client.getNetworkHandler().getPlayerListEntry(vehiclePlayer.getUuid());
+
+            entry = client.getConnection().getPlayerInfo(vehiclePlayer.getUUID());
         } else {
             if (!firstLine.isEmpty()) {
-                for (PlayerListEntry candidate : client.getNetworkHandler().getPlayerList()) {
+                for (PlayerInfo candidate : client.getConnection().getOnlinePlayers()) {
                     String name = candidate.getProfile().name();
+
                     if (name != null && !name.isEmpty() && firstLine.contains(name)) {
-                        if (!config.showOwnPing && candidate.getProfile().id().equals(client.player.getUuid())) {
+                        if (!config.showOwnPing && candidate.getProfile().id().equals(client.player.getUUID())) {
                             return;
                         }
+
                         entry = candidate;
                         break;
                     }
                 }
             }
+
             if (entry == null) {
                 return;
             }
         }
 
-        MutableText suffix;
-        if (entry == null) {
-            String textFormat = config.textFormat.replaceAll("%ping%", Matcher.quoteReplacement("??"));
+        MutableComponent suffix;
 
-            suffix = Text.literal(textFormat).setStyle(Style.EMPTY.withColor(0xAAAAAA));
+        if (entry == null) {
+            String textFormat = config.textFormat.replace("%ping%", "??");
+            suffix = Component.literal(textFormat).setStyle(Style.EMPTY.withColor(0xAAAAAA));
         } else {
             int latency = Math.max(0, entry.getLatency());
-            String textFormat = config.textFormat.replaceAll("%ping%", Matcher.quoteReplacement(String.valueOf(latency)));
-
-            suffix = Text.literal(textFormat).setStyle(Style.EMPTY.withColor(config.colorForPing(latency)));
+            String textFormat = config.textFormat.replace("%ping%", String.valueOf(latency));
+            suffix = Component.literal(textFormat).setStyle(Style.EMPTY.withColor(config.colorForPing(latency)));
         }
 
-        Text modifiedText = ping_nametag$appendSuffixToTopLine(baseText, suffix);
-        ((TextDisplayEntityRenderStateAccessor) renderState).ping_nametag$setTextLines(getLines(modifiedText, entity.getLineWidth()));
+        Component modifiedText = ping_nametag$appendSuffixToTopLine(baseText, suffix);
+
+        ((TextDisplayEntityRenderStateAccessor) renderState).ping_nametag$setTextLines(
+                splitLines(modifiedText, entity.getLineWidth())
+        );
     }
 
-    private static Text ping_nametag$appendSuffixToTopLine(Text baseText, MutableText suffix) {
+    private static Component ping_nametag$appendSuffixToTopLine(Component baseText, MutableComponent suffix) {
         if (!baseText.getString().contains("\n")) {
             return baseText.copy().append(suffix);
         }
+
         boolean[] inserted = {false};
         return ping_nametag$buildWithSuffixInserted(baseText, suffix, inserted);
     }
 
-    private static MutableText ping_nametag$buildWithSuffixInserted(Text node, MutableText suffix, boolean[] inserted) {
+    private static MutableComponent ping_nametag$buildWithSuffixInserted(Component node, MutableComponent suffix, boolean[] inserted) {
         String ownStr = ping_nametag$ownLiteralString(node);
-        MutableText result;
+        MutableComponent result;
 
         if (!inserted[0] && ownStr.contains("\n")) {
             int nl = ownStr.indexOf('\n');
-            result = Text.literal(ownStr.substring(0, nl)).setStyle(node.getStyle());
+
+            result = Component.literal(ownStr.substring(0, nl)).setStyle(node.getStyle());
             result.append(suffix);
-            result.append(Text.literal(ownStr.substring(nl)).setStyle(node.getStyle()));
+            result.append(Component.literal(ownStr.substring(nl)).setStyle(node.getStyle()));
+
             inserted[0] = true;
-            for (Text sibling : node.getSiblings()) {
+
+            for (Component sibling : node.getSiblings()) {
                 result.append(sibling);
             }
         } else {
-            result = MutableText.of(node.getContent()).setStyle(node.getStyle());
-            for (Text sibling : node.getSiblings()) {
+            result = MutableComponent.create(node.getContents()).setStyle(node.getStyle());
+
+            for (Component sibling : node.getSiblings()) {
                 if (inserted[0]) {
                     result.append(sibling);
                 } else {
                     result.append(ping_nametag$buildWithSuffixInserted(sibling, suffix, inserted));
                 }
             }
+
             if (!inserted[0]) {
                 result.append(suffix);
                 inserted[0] = true;
             }
         }
+
         return result;
     }
 
-    private static String ping_nametag$ownLiteralString(Text node) {
-        if (node.getContent() instanceof PlainTextContent.Literal literal) {
-            return literal.string();
+    private static String ping_nametag$ownLiteralString(Component node) {
+        if (node.getContents() instanceof PlainTextContents.LiteralContents literal) {
+            return literal.text();
         }
+
         return "";
     }
 }

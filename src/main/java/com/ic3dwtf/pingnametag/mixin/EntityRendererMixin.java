@@ -2,25 +2,25 @@ package com.ic3dwtf.pingnametag.mixin;
 
 import com.ic3dwtf.pingnametag.config.PingNametagConfig;
 import com.ic3dwtf.pingnametag.config.PingNametagConfigManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.entity.Entity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.regex.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.world.entity.Entity;
 
 @Mixin(EntityRenderer.class)
 public abstract class EntityRendererMixin {
 
-    @Inject(method = "updateRenderState", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void ping_nametag$appendPingOverlayToFinalLabel(Entity entity, EntityRenderState state, float tickProgress, CallbackInfo ci) {
         PingNametagConfig config = PingNametagConfigManager.get();
 
@@ -28,28 +28,28 @@ public abstract class EntityRendererMixin {
             return;
         }
 
-        if (!(entity instanceof AbstractClientPlayerEntity self)) {
+        if (!(entity instanceof AbstractClientPlayer self)) {
             return;
         }
 
-        Text originalText = ((EntityRenderStateAccessor) state).ping_nametag$getDisplayName();
+        Component originalText = ((EntityRenderStateAccessor) state).ping_nametag$getDisplayName();
         if (originalText == null || originalText.getString().isEmpty()) {
             return;
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.getConnection() == null) {
             return;
         }
 
-        if (!config.showOwnPing && self.getUuid().equals(client.player.getUuid())) {
+        if (!config.showOwnPing && self.getUUID().equals(client.player.getUUID())) {
             return;
         }
 
-        PlayerListEntry entry = client.getNetworkHandler().getPlayerListEntry(self.getUuid());
+        PlayerInfo entry = client.getConnection().getPlayerInfo(self.getUUID());
         if (entry == null) {
             String textFormat = config.textFormat.replaceAll("%ping%", Matcher.quoteReplacement("??"));
-            MutableText unknownSuffix = Text.literal(textFormat).setStyle(Style.EMPTY.withColor(0xAAAAAA));
+            MutableComponent unknownSuffix = Component.literal(textFormat).setStyle(Style.EMPTY.withColor(0xAAAAAA));
             ((EntityRenderStateAccessor) state).ping_nametag$setDisplayName(
                     ping_nametag$baseLabelWithoutPingSuffix(originalText).append(unknownSuffix)
             );
@@ -58,7 +58,7 @@ public abstract class EntityRendererMixin {
 
         int latency = Math.max(0, entry.getLatency());
         String textFormat = config.textFormat.replaceAll("%ping%", Matcher.quoteReplacement(String.valueOf(latency)));
-        MutableText suffix = Text.literal(textFormat)
+        MutableComponent suffix = Component.literal(textFormat)
                 .setStyle(Style.EMPTY.withColor(config.colorForPing(latency)));
 
         ((EntityRenderStateAccessor) state).ping_nametag$setDisplayName(
@@ -66,14 +66,14 @@ public abstract class EntityRendererMixin {
         );
     }
 
-    private static MutableText ping_nametag$baseLabelWithoutPingSuffix(Text originalText) {
-        MutableText baseText = originalText.copy();
+    private static MutableComponent ping_nametag$baseLabelWithoutPingSuffix(Component originalText) {
+        MutableComponent baseText = originalText.copy();
         var siblings = baseText.getSiblings();
         if (siblings.isEmpty()) {
             return baseText;
         }
 
-        Text lastSibling = siblings.get(siblings.size() - 1);
+        Component lastSibling = siblings.get(siblings.size() - 1);
         if (ping_nametag$isPingSuffix(lastSibling.getString())) {
             siblings.remove(siblings.size() - 1);
         }
