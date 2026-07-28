@@ -1,7 +1,7 @@
-package com.ic3dwtf.pingnametag.mixin;
+package com.ic3dwtf.nametagping.mixin;
 
-import com.ic3dwtf.pingnametag.config.PingNametagConfig;
-import com.ic3dwtf.pingnametag.config.PingNametagConfigManager;
+import com.ic3dwtf.nametagping.config.PingNametagConfig;
+import com.ic3dwtf.nametagping.config.PingNametagConfigManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;

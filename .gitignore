@@ -1,44 +1,40 @@
+# gradle
+
 .gradle/
 build/
 out/
-bin/
+classes/
+
+# eclipse
+
+*.launch
+
+# idea
 
 .idea/
 *.iml
-*.iws
 *.ipr
 *.iws
-.idea_modules/
-*.log
-*.hprof
 
+# vscode
+
+.settings/
 .vscode/
-.history/
+bin/
+.classpath
+.project
 
-!gradle-wrapper.jar
-!gradle-wrapper.properties
-.gradle-cache/
+# macos
+
+*.DS_Store
+
+# fabric
 
 run/
-logs/
-crash-reports/
-replay_recordings/
-fabric-server-launch.jar
-*.launch
-eclipse/
-bin/
-libs/
 
-.DS_Store
-Thumbs.db
-ehthumbs.db
+# java
 
-*.class
-*.jar
-*.war
-*.ear
-
-*.tmp
-*.bak
-*.swp
-*.lock
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr

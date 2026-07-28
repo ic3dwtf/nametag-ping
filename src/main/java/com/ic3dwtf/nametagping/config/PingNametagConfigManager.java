@@ -1,4 +1,4 @@
-package com.ic3dwtf.pingnametag.config;
+package com.ic3dwtf.nametagping.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

@@ -15,10 +15,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "com.ic3dwtf.pingnametag.PingNametagClient"
+      "com.ic3dwtf.nametagping.PingNametagClient"
     ],
     "modmenu": [
-      "com.ic3dwtf.pingnametag.PingNametagModMenu"
+      "com.ic3dwtf.nametagping.PingNametagModMenu"
     ]
   },
   "mixins": [

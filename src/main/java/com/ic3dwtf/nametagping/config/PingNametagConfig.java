@@ -1,4 +1,4 @@
-package com.ic3dwtf.pingnametag.config;
+package com.ic3dwtf.nametagping.config;
 
 public final class PingNametagConfig {
     public boolean enabled = true;

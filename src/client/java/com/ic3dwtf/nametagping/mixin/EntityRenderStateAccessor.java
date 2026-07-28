@@ -1,4 +1,4 @@
-package com.ic3dwtf.pingnametag.mixin;
+package com.ic3dwtf.nametagping.mixin;
 
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.network.chat.Component;
