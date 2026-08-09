@@ -13,9 +13,7 @@ Unlike other ping mods, this works reliably on servers with custom nametag plugi
 - Compatible with [Tier Tagger](https://modrinth.com/mod/tiertagger) & [Tiers](https://modrinth.com/mod/tiers)!
 
 **Configurable through [Mod Menu](https://modrinth.com/mod/modmenu)**
-
 ---
-
 # Requirements / Installation
 
 1. **Install the Fabric Loader**
