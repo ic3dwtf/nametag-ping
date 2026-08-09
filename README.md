@@ -1,5 +1,5 @@
 # Nametag Ping
-[![Modpacks on Modpack Index](https://www.modpackindex.com/badge/mod/109862/nametag-ping/modpacks.svg)](https://www.modpackindex.com/mod/109862/nametag-ping) [![Downloads across all platforms](https://www.modpackindex.com/badge/mod/109862/nametag-ping/downloads.svg)](https://www.modpackindex.com/mod/109862/nametag-ping)
+[![Downloads across all platforms](https://www.modpackindex.com/badge/mod/109862/nametag-ping/downloads.svg)](https://www.modpackindex.com/mod/109862/nametag-ping) [![Modpacks on Modpack Index](https://www.modpackindex.com/badge/mod/109862/nametag-ping/modpacks.svg)](https://www.modpackindex.com/modpacks?mods[]=109862)
 ---
 A lightweight Fabric client mod that appends live ping `(Xms)` to every player's nametag, with color-coded thresholds and full support for **Standard & TextDisplay-based nametags**.
 
